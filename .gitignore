@@ -1,0 +1,10 @@
+# Build output
+bin/
+*.o
+*.out
+
+# Editor & LSP temp files
+*.swp
+*.swo
+.netrwhist
+*~

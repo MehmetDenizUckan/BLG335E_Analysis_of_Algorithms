@@ -1,0 +1,7 @@
+CompileFlags:
+  Add:
+    - "-xc"
+    - "-std=c11"
+    - "-Icommon"
+    - "-I../common"
+    - "-I../../common"
