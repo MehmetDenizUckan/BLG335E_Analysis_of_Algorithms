@@ -28,7 +28,6 @@ RESEARCH_TRACK = "R2"     # <-- choose exactly one: "R1", "R2" or "R3" (Project1
 # =====================================================================================
 # PART A - Lecture algorithms (Weeks 1-4)                                   [A1-A6]     
 # =====================================================================================
-
 def insertion_sort(A, p=0, r=None):
     """Sort A[p..r] (inclusive, 0-based) in place. Returns None."""
     if r is None:
@@ -37,15 +36,11 @@ def insertion_sort(A, p=0, r=None):
     for j in range(p + 1, r + 1):
         key = A[j]
         i = j - 1
-        
-        while i >= p:
-            if A[i] > key:
-                A[i + 1] = A[i]
-                i -= 1
-            else:
-                break
-                
-        A[i + 1] = key 
+      
+        while i >= p and A[i] > key:
+            A[i + 1] = A[i]
+            i -= 1
+        A[i + 1] = key
 
 def merge(A, p, q, r):
     """Merge sorted A[p..q] and A[q+1..r] in place, stably, WITHOUT sentinels."""
@@ -67,17 +62,11 @@ def merge(A, p, q, r):
             A[k] = R[j]
             j += 1
         k += 1
-
-    while i < n1:
-        A[k] = L[i]
-        i += 1
-        k += 1
-
-    while j < n2:
-        A[k] = R[j]
-        j += 1
-        k += 1
-
+    
+    if i < len(L):
+        A[k : r + 1] = L[i:]
+    elif j < len(R):
+        A[k : r + 1] = R[j:]
 
 def merge_sort(A, p=0, r=None):
     """Top-down merge sort of A[p..r] in place with q = (p + r) // 2. Returns None."""
@@ -94,53 +83,138 @@ def merge_sort(A, p=0, r=None):
 def partition(A, p, r):
     """Lomuto PARTITION of A[p..r] around x = A[r]. Returns the pivot's final index."""
     # TODO A3
-
-    raise NotImplementedError
+    x = A[r]
+    i = p - 1
+    for j in range(p, r):
+        if A[j] <= x:
+            i += 1
+            A[i], A[j] = A[j], A[i]
+    A[i + 1], A[r] = A[r], A[i + 1]
+    return i + 1
 
 
 def choose_pivot(A, p, r, pivot, rng):
     """Move the pivot chosen by rule 'last', 'random' or 'median3' into A[r]."""
     # TODO A3
-    raise NotImplementedError
+    if pivot == "last":
+        return
+    elif pivot == "random":
+        k = rng.randint(p, r)
+        A[k], A[r] = A[r], A[k]
+    elif pivot == "median3" and r - p + 1 >= 3:
+            m = (p + r) // 2
+            # Strict comparison order from Section 3:
+            if A[m] < A[p]:
+                A[m], A[p] = A[p], A[m]
+            if A[r] < A[p]:
+                A[r], A[p] = A[p], A[r]
+            if A[r] < A[m]:
+                A[r], A[m] = A[m], A[r]
+            A[m], A[r] = A[r], A[m]
+
 
 
 def quicksort(A, pivot="last", rng=None, cutoff=2):
     """In-place quicksort with smaller-side recursion and an insertion-sort cutoff. Returns None."""
+    if len(A) <= 1:
+        return
     if pivot == "random" and rng is None:
         rng = random.Random()
     # TODO A3 + A4 (you may add a helper function) 
-    if len(A) <= 1:
-        return
 
-    p = 0
-    r = len(A) - 1
+    S = max(cutoff, 2)
 
-    def _helper_bc_hw_force_me_to_use_py_wrappers_instead_of_C(p,r):    
-        while p < r:
-            if r - p + 1 <= cutoff:
-                insertion_sort(A, p, r)
-                break
-            
+    def QS(p, r):
+        while r - p + 1 >= S:
             choose_pivot(A, p, r, pivot, rng)
             q = partition(A, p, r)
-
             if q - p < r - q:
-                # Left side is smaller
-                quicksort(A, )
+                # Left side is strictly smaller -> recurse left, loop right
+                QS(p, q - 1)
+                p = q + 1
+            else:
+                # Right side is smaller or equal -> recurse right, loop left
+                QS(q + 1, r)
+                r = q - 1
+        if p < r:
+            insertion_sort(A, p, r)
 
-
+    QS(0, len(A) - 1)
 
 
 def quickselect(A, k, rng):
     """Return the k-th smallest element of A (k is 1-based). A may be rearranged."""
     # TODO A5
-    raise NotImplementedError
+    p = 0 
+    r = len(A) - 1
+    while True:
+        if p == r:
+            return A[p]
+        idx = rng.randint(p, r)
+        A[idx], A[r] = A[r], A[idx]
+        q = partition(A, p, r)
+        rank = q - p + 1
+        if k == rank:
+            return A[q]
+        elif k < rank:
+            r = q - 1
+        else:
+            k = k - rank
+            p = q + 1
 
 
 def count_inversions(A):
-    """Return the number of pairs i < j with A[i] > A[j], in O(n log n). Do not modify A."""
-    # TODO A6
-    raise NotImplementedError
+    """Return the number of pairs i < j with A[i] > A[j], in O(n lg n) time, without changing A."""
+    arr = list(A)
+    
+    def merge_and_count(p, q, r):
+        L = arr[p : q + 1]
+        R = arr[q + 1 : r + 1]
+        
+        i = 0
+        j = 0
+        k = p
+        len_L = len(L)
+        len_R = len(R)
+        inv_count = 0
+        
+        while i < len_L and j < len_R:
+            if L[i] <= R[j]:
+                arr[k] = L[i]
+                i += 1
+            else:
+                arr[k] = R[j]
+                inv_count += len_L - i
+                j += 1
+            k += 1
+            
+        while i < len_L:
+            arr[k] = L[i]
+            i += 1
+            k += 1
+            
+        while j < len_R:
+            arr[k] = R[j]
+            j += 1
+            k += 1
+            
+        return inv_count
+
+    def sort_and_count(p, r):
+        if p >= r:
+            return 0
+        q = (p + r) // 2
+        left_inv = sort_and_count(p, q)
+        right_inv = sort_and_count(q + 1, r)
+        split_inv = merge_and_count(p, q, r)
+        return left_inv + right_inv + split_inv
+
+    if len(arr) <= 1:
+        return 0
+
+    return sort_and_count(0, len(arr) - 1)  
+
+
 
 
 # =====================================================================================
